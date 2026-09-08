@@ -130,25 +130,9 @@ Add these secrets to **Settings > Secrets and variables > Actions** (or to the `
 | `APPLE_NOTARIZATION_TEAM_ID` | `6UR4V5Z3N7` |
 | `APPLE_NOTARIZATION_APP_PASSWORD` | app-specific password created above |
 
-The Release workflow does not wait on Apple's notarization queue. It imports the certificate into a temporary Keychain, builds both signed DMGs, submits them with `notarytool submit --no-wait`, and stores the submission IDs as `notary-*.json` assets on a **Draft Release**.
+The Release workflow runs automatically on tag push (`v*`) or manual `workflow_dispatch`. It imports the Developer ID certificate into a temporary Keychain, builds both signed DMGs (`arm64` and `x86_64`), submits them concurrently to Apple Notary Service with `notarytool submit --wait --timeout 30m`, staples the notarization tickets, writes basename SHA-256 checksums, publishes the GitHub Release from a draft only after those assets are uploaded, and updates the Homebrew Cask formula on `main` from the published DMGs. Workflow helpers (`Scripts/notarize-dmg.sh` and the publish script) are taken from the workflow commit, not the app tag, so manually publishing an older tag still waits for notarization.
 
-The `notarize-poll.yml` workflow checks draft releases every 30 minutes. While a draft has `notary-*.json` markers, it queries Apple and waits. Once both submissions are `Accepted`, it dispatches `release-finalize.yml`, which:
-
-1. Downloads the draft DMGs.
-2. Runs `xcrun stapler staple` and validates the notarization ticket.
-3. Replaces the checksum file with the stapled artifacts.
-4. Removes the `notary-*.json` markers.
-5. Publishes the release.
-
-The public release is only created after Apple accepts both architectures. To finalize a draft manually:
-
-```sh
-gh workflow run release-finalize.yml \
-  --repo shiquda/SpotAsk \
-  --field release_tag=v0.1.5
-```
-
-Notarization can occasionally take much longer than the usual few minutes. A new account or a submission Apple holds for review can remain `In Progress` for hours, so leaving the Draft Release in place and letting the poll workflow retry is expected.
+The 30-minute `--timeout` only ends local polling. Apple Notary Service can keep processing after the runner gives up, so a timeout is not a rejection and there is no promised wall-clock time to publication. If the wait times out or a later step fails, the GitHub Release stays missing or draft. Re-run the same tag with `workflow_dispatch`: a published release is never overwritten (Cask recovery reuses the published DMGs); a missing or draft release rebuilds, resubmits, and publishes only after a complete upload. `shasum -a 256 -c SpotAsk-vX.Y.Z-SHA256SUMS.txt` is expected to work in the same directory as the downloaded DMGs.
 
 ## Project layout
 
