@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The selection action bar can show External Ask targets beside prompt presets. Separate toggles hide prompts or External Ask (both on by default). Up to eight actions share the bar.
 - Open SpotAsk from Alfred, Raycast, Shortcuts, or the terminal with `spotask://` URLs: `open`, `ask?q=`, `toggle`, and `settings`.
 
 ### Fixed
 
 - The ask window no longer jumps in front during Space switching when Keep window on top is off.
+- Settings switch labels use the available row width instead of the 134pt control column, so longer copy is no longer truncated.
+- The Selection Assistant settings page scrolls when its controls no longer fit the window.
+- Labeled selection action bar prompts stay inside the 400pt panel: long titles truncate instead of rendering off-canvas. Full names remain on the tooltip.
+- Clearing or failing a selection, or turning the assistant off, dismisses the action bar and drops the captured snapshot.
 
 ## [0.2.0] - 2026-08-19
 
